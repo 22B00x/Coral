@@ -1,0 +1,115 @@
+--[[
+getgenv().Coral = true
+getgenv().AimbotFov = 20
+getgenv().Keybind = "J"
+getgenv().Hitpart = "Head"
+getgenv().AimbotSpeed = 1
+getgenv().FovCircleVisible = true
+getgenv().autoshoot = true
+]]--
+
+local CurCamV = game:GetService("Workspace").CurrentCamera.ViewportSize
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = game:GetService("Players").LocalPlayer
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+
+if getgenv().FovCircleVisible and getgenv().Coral ~= false then
+    CurCamV = game:GetService("Workspace").CurrentCamera.ViewportSize
+    if getgenv().AimbotFovC == nil then
+        getgenv().AimbotFovC = Drawing.new("Circle")
+    end
+    Workspace.CurrentCamera:GetPropertyChangedSignal("FieldOfView"):Connect(function()
+        getgenv().AimbotFovC.Radius = (math.abs(getgenv().AimbotFov/((game:GetService("Workspace").CurrentCamera.FieldOfView*(CurCamV.X/CurCamV.Y))/CurCamV.X)))/2
+    end)
+    getgenv().AimbotFovC.Visible = true
+    getgenv().AimbotFovC.ZIndex = -9999999
+    getgenv().AimbotFovC.Transparency = 0.8
+    getgenv().AimbotFovC.Color = Color3.fromRGB(135,206,235)
+    getgenv().AimbotFovC.Thickness = 1
+    getgenv().AimbotFovC.NumSides = 200
+    getgenv().AimbotFovC.Radius = (math.abs(getgenv().AimbotFov/((game:GetService("Workspace").CurrentCamera.FieldOfView*(CurCamV.X/CurCamV.Y))/CurCamV.X)))/2
+    getgenv().AimbotFovC.Filled = false
+    getgenv().AimbotFovC.Position = Vector2.new(CurCamV.X/2,CurCamV.Y/2)
+else
+    if getgenv().AimbotFovC ~= nil then
+        getgenv().AimbotFovC.Visible = false
+    end
+end
+
+function CastRayToPlayers()
+    BlackTable = {}
+    LTeam = tostring(Players.LocalPlayer.TeamColor)
+    if LTeam == "Bright orange" then
+        Suckers = "Bright blue"
+    else
+        Suckers = "Bright orange"
+    end
+    if Workspace.Ignore:FindFirstChild("RefPlayer") then
+        for i,v in next, Workspace.Players[Suckers]:GetChildren() do
+            if v:FindFirstChild(getgenv().Hitpart) then
+                RaycastPR = RaycastParams.new()
+                table.insert(BlackTable, Workspace.CurrentCamera)
+                table.insert(BlackTable, Workspace.Ignore)
+                RaycastPR.FilterDescendantsInstances = BlackTable
+                RaycastPR.FilterType = Enum.RaycastFilterType.Blacklist
+                RaycastPR.RespectCanCollide = false
+                local ScreenP = Workspace.CurrentCamera:WorldToViewportPoint(v[getgenv().Hitpart].Position)
+                local cam = math.abs(getgenv().AimbotFov/((Workspace.CurrentCamera.FieldOfView*(CurCamV.X/CurCamV.Y))/CurCamV.X))
+                if (ScreenP and ScreenP.Z > 0) and (Vector2.new(CurCamV.X/2,CurCamV.Y/2) - Vector2.new(ScreenP.X, ScreenP.Y)).Magnitude <= cam/2 then
+                    Diwection = CFrame.lookAt(Workspace.Ignore.RefPlayer.Head.Position, v[getgenv().Hitpart].Position)
+                    raycwast = Workspace:Raycast(LocalPlayer.Character.Head.Position, Diwection.lookVector*2000, RaycastPR)
+                    if raycwast ~= nil then
+                        if raycwast.Instance:IsDescendantOf(v) then
+                            if getgenv().mag ~= nil then
+                                temp = ((Vector2.new(CurCamV.X/2,CurCamV.Y/2)) - (Vector2.new(ScreenP.X,ScreenP.Y))).Magnitude
+                                if getgenv().mag > temp then
+                                    getgenv().mag = temp
+                                    getgenv().Lookie = Diwection
+                                    getgenv().hiya = ScreenP
+                                end
+                            else
+                                getgenv().mag = ((Vector2.new(CurCamV.X/2,CurCamV.Y/2)) - (Vector2.new(ScreenP.X,ScreenP.Y))).Magnitude
+                                getgenv().Lookie = Diwection
+                                getgenv().hiya = ScreenP
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+function shoot()
+    mouse = LocalPlayer:GetMouse()
+    mouse.TargetFilter = Workspace.CurrentCamera
+    if mouse.Target:IsDescendantOf(getgenv().Person) then
+        mouse1press()
+        task.wait()
+        mouse1release()
+    else
+        mouse.TargetFilter = Workspace.Ignore
+        if mouse.Target:IsDescendantOf(getgenv().Person) then
+            mouse1press()
+            task.wait()
+            mouse1release()
+        end
+    end
+end
+
+while getgenv().Coral do
+    if UIS:IsKeyDown(Enum.KeyCode[getgenv().Keybind]) then
+        CastRayToPlayers()
+        if getgenv().Lookie ~= nil then
+            mousemoverel( ((getgenv().hiya.X) - CurCamV.X/2)/getgenv().AimbotSpeed, ((getgenv().hiya.Y) - CurCamV.Y/2)/getgenv().AimbotSpeed )
+            if getgenv().autoshoot then
+                shoot()
+            end
+            getgenv().Lookie = nil
+            getgenv().hiya = nil
+            getgenv().mag = nil
+        end
+    end
+    task.wait()
+end
